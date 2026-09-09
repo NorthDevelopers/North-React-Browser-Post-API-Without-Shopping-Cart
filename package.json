@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.1.4",
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.11",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.2",
     "react-dom": "^18.2.0",

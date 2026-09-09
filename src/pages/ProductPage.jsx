@@ -20,28 +20,14 @@ function ProductPage() {
 
     }, [])
  
-    const getTAC = () => {
-   	 let productPrice = product.price.toFixed(2)
-   	 return fetch('https://payments-hub-node-api.onrender.com/getTAC', {
-   		 method: 'post',
-   		 body: JSON.stringify({
-       		 amount: productPrice
-   		 }),
-   		 headers: {'Content-Type': 'application/json'},
-   	 })
-   	 .then(res => res.json())
-   	 .then(json => {
-   		 // check if TAC exists in json and redirect to the payments page
-   		 if(json.data){
-       		 localStorage.setItem('TAC', JSON.stringify(json.data))
-       		 localStorage.setItem('productPrice', productPrice)
-       		 navigate('/payment')
-   		 }else{
-       		 alert('An error occurred. Please try again')
-   		 }
-   	 })
-   	 .catch(error => console.log(error))
-    }
+    const handlePurchase = () => {
+      localStorage.setItem('selectedProduct', JSON.stringify({
+        title: product.title,
+        price: product.price,
+        image: product.image
+      }));
+      navigate('/payment');
+    };
     
   return (
     product &&
@@ -55,7 +41,7 @@ function ProductPage() {
        		 <h3>{product.title}</h3>
        		 <p>{product.description}</p>
        		 <h5>$ {(product.price).toFixed(2)}</h5>
-       		 <Button variant='success' onClick={() => getTAC()} className='w-25'>Purchase Now</Button>
+       		 <Button variant='success' onClick={() => handlePurchase()} className='w-25'>Purchase Now</Button>
    		 </Col>
    	 </Row>
     </Container>

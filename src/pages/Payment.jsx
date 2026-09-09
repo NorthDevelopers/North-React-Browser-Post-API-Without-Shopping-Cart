@@ -1,74 +1,98 @@
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import { Row, Col } from 'react-bootstrap'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Payment() {
-	const [accountNo, setAccountNo] = useState('4000000000000002')
-	const [expiry, setExpiry] = useState('2512')
-	const [cvv, setCvv] = useState('123')
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
-	const TAC = JSON.parse(localStorage.getItem('TAC'))
-	const AMOUNT = JSON.parse(localStorage.getItem('productPrice')).toFixed(2)
+  useEffect(() => {
+    let redirected = false;
+    let unsubscribe = null;
+
+    const mountCheckout = async () => {
+      try {
+        if (typeof window.checkout === 'undefined') {
+          throw new Error('Embedded Checkout script not loaded.');
+        }
+
+        // Retrieve selected product from localStorage
+        const selectedProduct = JSON.parse(localStorage.getItem('selectedProduct'));
+        if (!selectedProduct) {
+          throw new Error('No product selected for purchase.');
+        }
+
+        const amount = parseFloat(selectedProduct.price);
+        const products = [{
+          name: selectedProduct.title,
+          price: amount,
+          quantity: 1,
+          logoUrl: selectedProduct.image
+        }];
+
+        const res = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: parseFloat(amount.toFixed(2)),
+            products: products
+          }),
+        });
+
+        const text = await res.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error(text || `Server returned error status ${res.status}`);
+        }
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to create session');
+        }
+
+        const sessionToken = data.token;
+        if (!sessionToken) {
+          throw new Error('No session token returned.');
+        }
+
+        // Subscribe to payment completion with proper cleanup of the returned unsubscribe function
+        unsubscribe = window.checkout.onPaymentComplete((paymentData) => {
+          if (redirected) return;
+          redirected = true;
+          sessionStorage.setItem("north_session_token", sessionToken);
+          if (paymentData) {
+            sessionStorage.setItem("north_client_response", JSON.stringify(paymentData));
+          }
+          setTimeout(() => {
+            navigate('/payment/result');
+          }, 2000);
+        });
+
+        await window.checkout.mount(sessionToken, 'checkout-container');
+
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      }
+    };
+
+    mountCheckout();
+
+    // Cleanup subscription on unmount to prevent memory leaks and duplicate handlers
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [navigate]);
 
   return (
-	<div className='mt-4'>
-    	<h3 className='text-center'>Card Payment</h3>
-    	<Form  action="https://services.epxuap.com/browserpost/" method="post">
-        	<Form.Group className="mb-3">
-            	<Form.Label>Account Number</Form.Label>
-            	<Form.Control
-                	type="number"
-                	name='ACCOUNT_NBR'
-                	value={accountNo}
-                	onChange={e => setAccountNo(e.target.value)}
-            	/>
-        	</Form.Group>
-
-        	<Row>
-            	<Col>
-                	<Form.Group className="mb-3">
-                    	<Form.Label>Expiry Date</Form.Label>
-                    	<Form.Control
-                        	type="text"
-                        	name="EXP_DATE"
-                        	placeholder='YYMM'
-                        	value={expiry}
-                        	onChange={e => setExpiry(e.target.value)}
-                    	/>
-                	</Form.Group>
-            	</Col>
-
-            	<Col>
-                	<Form.Group className="mb-3">
-                    	<Form.Label>CVV</Form.Label>
-                    	<Form.Control
-                        	type="text"
-                        	name='CVV2'
-                        	placeholder="123"
-                        	value={cvv}
-                        	onChange={e => setCvv(e.target.value)}
-                    	/>
-                	</Form.Group>
-            	</Col>
-        	</Row>
-
-        	<Col className='d-none'>
-            	<Form.Control type='text' name='TRAN_CODE' defaultValue={import.meta.env.VITE_TRAN_CODE} />
-            	<Form.Control type='text' name='CUST_NBR' defaultValue={import.meta.env.VITE_CUST_NBR} />
-            	<Form.Control type='text' name='MERCH_NBR' defaultValue={import.meta.env.VITE_MERCH_NBR} />
-            	<Form.Control type='text' name='DBA_NBR' defaultValue={import.meta.env.VITE_DBA_NBR} />
-            	<Form.Control type='text' name='TERMINAL_NBR' defaultValue={import.meta.env.VITE_TERMINAL_NBR} />
-            	<Form.Control type='text' name='INDUSTRY_TYPE' defaultValue={import.meta.env.VITE_INDUSTRY_TYPE} />
-            	<Form.Control type='text' name='TAC' defaultValue={TAC} />
-            	<Form.Control type='text' name='AMOUNT' defaultValue={AMOUNT} />
-        	</Col>
-        	<Button variant="success" type="submit">
-            	Submit
-        	</Button>
-    	</Form>
-	</div>
-  )
+    <div className='mt-4'>
+      <h3 className='text-center'>Secure Checkout</h3>
+      {error && <p className="text-danger text-center">{error}</p>}
+      <div id="checkout-container" style={{ minHeight: '800px', height: '1000px', margin: '0 auto' }}></div>
+    </div>
+  );
 }
 
-export default Payment
+export default Payment;
