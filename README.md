@@ -1,5 +1,7 @@
 # Securely Embed Payments in a ReactJS App
 
+> ⚠️ **DEPRECATED**: This repository is deprecated. We recommend using [North-React-Embedded-Checkout-Without-Shopping-Cart](https://github.com/NorthDevelopers/North-React-Embedded-Checkout-Without-Shopping-Cart) instead.
+
 This is a JavaScript application that uses the React framework and Node.js to demonstrate an embedded payment solution with [North's Browser Post API](https://developer.north.com/products/online/browser-post). The code in this repository handles the front-end payment process and adds a simple payment form to a website. The code that handles back-end part of the payment process is located in a [separate repository](https://github.com/NorthDevelopers/North-Node-Browser-Post-API), allowing each to be deployed separately. This application does not include a shopping cart, making it a great fit for businesses that sell one item per transaction, such as utility services or other professional services.
 
 For a React ecommerce application with a shopping cart that allows customers to purchase multiple items at once, head over to [this repository](https://github.com/NorthDevelopers/North-React-Browser-Post-API-With-Shopping-Cart) and follow along with [this tutorial](https://developer.north.com/blog/embedded-payments-react-app-shopping-cart).
